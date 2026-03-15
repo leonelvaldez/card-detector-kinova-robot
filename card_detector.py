@@ -29,7 +29,7 @@ class Detection:
 
 
 CARD_CATALOGUE = [
-    # CardConfig("Star",     "data/templates/star.png",     (220, 50, 50)),
+    CardConfig("Star",     "data/templates/star.png",     (220, 50, 50)),
     CardConfig("Flower",   "data/templates/flower.png",   (180, 60, 180)),
     CardConfig("Leaves",   "data/templates/leaves.png",   (30, 160, 30)),
     CardConfig("Sign",     "data/templates/sign.png",     (0, 0, 220)),
@@ -52,7 +52,10 @@ ADAPTIVE_C = 4
 
 
 class ShapeMatcher:
-
+    """
+    Detects and classifies Memorama cards in a camera frame using
+    perspective warp and MSE-based template matching.
+    """
     def __init__(self, catalogue=CARD_CATALOGUE, max_mse=MAX_MSE_THRESHOLD,
                  min_quad_area=MIN_QUAD_AREA, debug_warps=False):
         self.catalogue = catalogue
@@ -90,6 +93,10 @@ class ShapeMatcher:
             print(f"loaded template: {cfg.name}")
 
     def process_frame(self, frame):
+        """
+        Takes a raw BGR camera frame, detects card quads, and returns
+        the annotated frame plus a list of Detection objects.
+        """
         if frame is None or frame.size == 0:
             return frame, []
 
@@ -140,6 +147,10 @@ class ShapeMatcher:
         return annotated, detections
 
     def _fit_quad(self, contour):
+        """
+        Tries to fit a 4-point polygon to a contour. Returns ordered
+        corner points or None if the contour is not card-shaped.
+        """
         if cv2.contourArea(contour) < self.min_quad_area:
             return None
 
@@ -198,6 +209,10 @@ class ShapeMatcher:
         return False
 
     def _classify_roi(self, roi, quad_pts):
+        """
+        Compares the warped ROI against all templates across 4 rotations
+        and returns the best matching Detection or None if MSE is too high.
+        """
         # try all 4 rotations since we don't know which way the card is facing
         rotations = [roi]
         for _ in range(3):
