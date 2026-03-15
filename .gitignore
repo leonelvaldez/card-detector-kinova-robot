@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.env
+venv/
+.venv/
+
+# OpenCV / debug output
+debug_snapshot_*.png
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
