@@ -8,9 +8,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+import logging
 import cv2
 import numpy as np
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class CardConfig:
@@ -90,7 +92,7 @@ class ShapeMatcher:
                 )
 
             self._templates[cfg.name] = binary
-            print(f"loaded template: {cfg.name}")
+            logger.info(f"loaded template: {cfg.name}")
 
     def process_frame(self, frame):
         """
@@ -142,7 +144,7 @@ class ShapeMatcher:
 
             detections.append(det)
             self._annotate_detection(annotated, det)
-            print(f"found: {det.card_name}  mse={det.mse:.1f}")
+            logger.info(f"found: {det.card_name}  mse={det.mse:.1f}")
 
         return annotated, detections
 
@@ -190,7 +192,7 @@ class ShapeMatcher:
         inner = warped[m: size - m, m: size - m]
 
         if inner.size == 0:
-            print(f"[warn] margin too large (margin={m}, size={size}), skipping quad")
+            logger.warning(f"[warn] margin too large (margin={m}, size={size}), skipping quad")
             return None
 
         inner_resized = cv2.resize(inner, (size, size), interpolation=cv2.INTER_AREA)
@@ -231,7 +233,7 @@ class ShapeMatcher:
                     best_name = name
 
         if best_name is None or best_mse > self.max_mse:
-            print(f"rejected quad — best was {best_name} with MSE={best_mse:.1f} (thresh={self.max_mse:.1f})")
+            logger.debug(f"rejected quad — best was {best_name} with MSE={best_mse:.1f} (thresh={self.max_mse:.1f})")
             return None
 
         return Detection(
@@ -269,16 +271,16 @@ def _run_webcam_demo(camera_index=0, debug_warps=False):
 
     cap = cv2.VideoCapture(camera_index)
     if not cap.isOpened():
-        print(f"can't open camera {camera_index}")
+        logger.error(f"can't open camera {camera_index}")
         sys.exit(1)
 
-    print(f"camera {camera_index} running — press q to quit, s to save snapshot, d to toggle debug")
+    logger.info(f"camera {camera_index} running — press q to quit, s to save snapshot, d to toggle debug")
 
     snapshot_counter = 0
     while True:
         ret, frame = cap.read()
         if not ret:
-            print("frame grab failed, trying again...")
+            logger.warning("frame grab failed, trying again...")
             continue
 
         annotated, detections = matcher.process_frame(frame)
@@ -295,11 +297,11 @@ def _run_webcam_demo(camera_index=0, debug_warps=False):
         elif key == ord("s"):
             fname = f"debug_snapshot_{snapshot_counter:03d}.png"
             cv2.imwrite(fname, annotated)
-            print(f"saved {fname}")
+            logger.info(f"saved {fname}")
             snapshot_counter += 1
         elif key == ord("d"):
             matcher.debug_warps = not matcher.debug_warps
-            print(f"debug warps: {'on' if matcher.debug_warps else 'off'}")
+            logger.info(f"debug warps: {'on' if matcher.debug_warps else 'off'}")
             if not matcher.debug_warps:
                 cv2.destroyWindow("[DEBUG] warped ROI")
 
